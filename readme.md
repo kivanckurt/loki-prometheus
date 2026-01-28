@@ -1,7 +1,3 @@
-Here is a clean, professional `README.md` formatted for GitHub, covering the initialization and configuration steps.
-
----
-
 # Loki Logging Stack for Docker Swarm
 
 This repository contains a lightweight, Swarm-native logging stack. It deploys **Grafana Loki** (log storage), **Promtail** (log collection agent running on every node), and **Grafana** (visualization), along with a sample log-producing application.
