@@ -1,0 +1,61 @@
+version: "3.8"
+
+networks:
+  loki-net:
+    driver: overlay
+
+configs:
+  promtail_config:
+    file: ./promtail-config.yaml
+
+services:
+  # 1. Loki - The Log Database
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - loki-net
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  # 2. Promtail - The Log Collector (Runs on ALL nodes)
+  promtail:
+    image: grafana/promtail:latest
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - loki-net
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/config.yaml
+    volumes:
+      # Mount Docker socket so Promtail can find other containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount Docker log directory so Promtail can read the log files
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    deploy:
+      mode: global  # IMPORTANT: Runs one instance per node
+
+  # 3. Grafana - The Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - loki-net
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  # 4. Log Producer - A sample app generating noise
+  log-producer:
+    image: chentex/random-logger:latest
+    networks:
+      - loki-net
+    deploy:
+      mode: replicated
+      replicas: 2
